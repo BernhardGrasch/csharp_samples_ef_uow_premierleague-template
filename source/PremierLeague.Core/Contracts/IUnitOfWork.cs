@@ -6,9 +6,7 @@ namespace PremierLeague.Core.Contracts
     {
         IGameRepository Games { get; }
         ITeamRepository Teams { get; }
-
         void SaveChanges();
-
         void DeleteDatabase();
         void MigrateDatabase();
     }

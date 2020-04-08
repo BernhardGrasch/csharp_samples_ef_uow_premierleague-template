@@ -1,4 +1,5 @@
-﻿using PremierLeague.Core;
+﻿using ConsoleTables;
+using PremierLeague.Core;
 using PremierLeague.Core.Contracts;
 using PremierLeague.Core.Entities;
 using PremierLeague.Persistence;
@@ -52,10 +53,10 @@ namespace PremierLeague.ImportConsole
                 Log.Information("Import der Spiele und Teams in die Datenbank");
 
                 Log.Information("Datenbank löschen");
-                // TODO: Datenbank löschen
+                unitOfWork.DeleteDatabase();
 
                 Log.Information("Datenbank migrieren");
-                // TODO: Datenbank migrieren
+                unitOfWork.MigrateDatabase();
 
                 Log.Information("Spiele werden von premierleague.csv eingelesen");
                 var games = ImportController.ReadFromCsv().ToArray();
@@ -67,21 +68,50 @@ namespace PremierLeague.ImportConsole
                 {
                     Log.Debug($"  Es wurden {games.Count()} Spiele eingelesen!");
 
-                    // TODO: Teams aus den Games ermitteln
-                    var teams = Enumerable.Empty<Team>();
+                    var teams = games
+                        .Select(g => g.HomeTeam)
+                        .Distinct()
+                        .OrderBy(t => t.Name);
+
                     Log.Debug($"  Es wurden {teams.Count()} Teams eingelesen!");
 
+                    unitOfWork.Games.AddRange(games);
                     Log.Information("Daten werden in Datenbank gespeichert (in Context übertragen)");
 
-                    // TODO: Teams/Games in der Datenbank speichern
                     Log.Information("Daten wurden in DB gespeichert!");
+                    unitOfWork.SaveChanges();
                 }
             }
         }
 
         private static void AnalyzeData()
         {
-            throw new NotImplementedException();
+            using(IUnitOfWork unitOfWork = new UnitOfWork())
+            {
+                var teamWithMostGoals = unitOfWork.Teams.GetTeamWithMostGoals();
+                PrintResult("Team mit den meisten geschossenen Toren:", $"{teamWithMostGoals.Team.Name}: {teamWithMostGoals.Goals} Tore");
+
+                var teamWithMostAwayGoals = unitOfWork.Teams.GetTeamWithMostAwayGoals();
+                PrintResult("Team mit den meisten geschossenen Auswärtstoren:", $"{teamWithMostAwayGoals.Team.Name}: {teamWithMostAwayGoals.Goals} Tore");
+
+                var teamWithMostHomeGoals = unitOfWork.Teams.GetTeamWithMostHomeGoals();
+                PrintResult("Team mit den meisten geschossenen Heimtoren:", $"{teamWithMostHomeGoals.Team.Name}: {teamWithMostHomeGoals.Goals} Tore");
+
+                var teamWithBestGoalDifference = unitOfWork.Teams.GetTeamWithBestGoalDifference();
+                PrintResult("Team mit dem besten Torverhältnis:", $"{teamWithBestGoalDifference.Team.Name}: {teamWithBestGoalDifference.GoalDifference} Tore");
+
+                var teamStatistics = unitOfWork.Teams.GetTeamStatistics();
+                PrintResult("Team Leistung im Durchschnitt (sotiert nach durchsn. geschossene Tore pro Spiel [absteig.]):", ConsoleTable
+                    .From(teamStatistics)
+                    .Configure(c => c.NumberAlignment = Alignment.Right)
+                    .ToStringAlternative());
+
+                var teamStandings = unitOfWork.Teams.GetTeamStandings();
+                PrintResult("Team Tabelle (sortiert nach Rang):", ConsoleTable
+                    .From(teamStandings)
+                    .Configure(c => c.NumberAlignment = Alignment.Right)
+                    .ToStringAlternative());
+            }
         }
 
         /// <summary>

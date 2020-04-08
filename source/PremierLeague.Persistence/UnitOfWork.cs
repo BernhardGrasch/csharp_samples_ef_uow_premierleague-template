@@ -51,6 +51,5 @@ namespace PremierLeague.Persistence
         {
             _dbContext.SaveChanges();
         }
-
     }
 }
