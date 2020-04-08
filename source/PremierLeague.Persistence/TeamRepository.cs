@@ -110,17 +110,18 @@ namespace PremierLeague.Persistence
                 .Select(t => new TeamStatisticDto
                 {
                     Name = t.Name,
-                    AvgGoalsShotAtHome = t.HomeGames.Sum(g => g.HomeGoals) / t.HomeGames.Count(),
-                    AvgGoalsShotOutwards = t.AwayGames.Sum(g => g.GuestGoals) / t.AwayGames.Count(),
-                    AvgGoalsShotInTotal = ((t.HomeGames.Sum(g => g.HomeGoals) / t.HomeGames.Count()) + (t.AwayGames.Sum(g => g.GuestGoals) / t.AwayGames.Count())) / 2,
-                    AvgGoalsGotAtHome = t.HomeGames.Sum(g => g.GuestGoals) / t.HomeGames.Count(),
-                    AvgGoalsGotOutwards = t.AwayGames.Sum(g => g.HomeGoals) / t.AwayGames.Count(),
-                    AvgGoalsGotInTotal = ((t.HomeGames.Sum(g => g.GuestGoals) / t.HomeGames.Count()) + (t.AwayGames.Sum(g => g.HomeGoals) / t.AwayGames.Count())) / 2
+                    AvgGoalsShotAtHome = (double)t.HomeGames.Sum(g => g.HomeGoals) / t.HomeGames.Count(),
+                    AvgGoalsShotOutwards = (double)t.AwayGames.Sum(g => g.GuestGoals) / t.AwayGames.Count(),
+                    AvgGoalsShotInTotal = (double)(t.HomeGames.Sum(g => g.HomeGoals) + t.AwayGames.Sum(g => g.GuestGoals)) 
+                        / (t.AwayGames.Count() + t.HomeGames.Count()),
+                    AvgGoalsGotAtHome = (double)t.HomeGames.Sum(g => g.GuestGoals) / t.HomeGames.Count(),
+                    AvgGoalsGotOutwards = (double)t.AwayGames.Sum(g => g.HomeGoals) / t.AwayGames.Count(),
+                    AvgGoalsGotInTotal = (double)(t.HomeGames.Sum(g => g.GuestGoals) + t.AwayGames.Sum(g => g.HomeGoals)) 
+                        / (t.HomeGames.Count() + t.AwayGames.Count())
                 })
-                //.AsEnumerable()
-                //.Select(t => (t.Name, t.AvgGoalsShotAtHome, t.AvgGoalsShotOutwards, t.AvgGoalsShotInTotal, t.AvgGoalsGotAtHome, t.AvgGoalsGotOutwards, t.AvgGoalsGotInTotal))
+                .AsEnumerable()
                 .OrderByDescending(t => t.AvgGoalsShotInTotal)
-                .ToArray();
+                .ToList();
         }
 
         public IEnumerable<TeamTableRowDto> GetTeamStandings()
@@ -130,19 +131,17 @@ namespace PremierLeague.Persistence
                 .Select(t => new TeamTableRowDto
                 {
                     Id = t.Id,
-                    Rank = 0,
                     Name = t.Name,
                     Matches = t.HomeGames.Count + t.AwayGames.Count,
                     Won = t.HomeGames.Where(g => g.HomeGoals > g.GuestGoals).Count() + t.AwayGames.Where(g => g.GuestGoals > g.HomeGoals).Count(),
-                    //Drawn = t.HomeGames.Where(g => g.HomeGoals == g.GuestGoals).Count() + t.AwayGames.Where(g => g.GuestGoals == g.HomeGoals).Count(),
                     Lost = t.HomeGames.Where(g => g.HomeGoals < g.GuestGoals).Count() + t.AwayGames.Where(g => g.GuestGoals < g.HomeGoals).Count(),
                     GoalsFor = t.HomeGames.Sum(g => g.HomeGoals) + t.AwayGames.Sum(g => g.GuestGoals),
                     GoalsAgainst = t.HomeGames.Sum(g => g.GuestGoals) + t.AwayGames.Sum(g => g.HomeGoals),
                 })
                 .AsEnumerable()
                 .OrderByDescending(t => t.Points)
-                .ThenBy(t => t.GoalDifference)
-                .ToArray();
+                .ThenByDescending(t => t.GoalDifference)
+                .ToList();
         }
     }
 }
